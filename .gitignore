@@ -1,0 +1,27 @@
+@"
+# Node
+node_modules/
+dist/
+build/
+
+# Laravel
+vendor/
+.env
+.env.local
+.env.testing
+storage/*.key
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# SQLite
+*.sqlite
+"@ | Out-File .gitignore -Encoding utf8
