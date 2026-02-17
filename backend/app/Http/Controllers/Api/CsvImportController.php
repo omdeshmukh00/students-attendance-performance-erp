@@ -12,11 +12,69 @@ use Illuminate\Support\Facades\Log;
 class CsvImportController extends Controller
 {
 
-/* ================= CLEAN ================= */
+/* ================= BASIC CLEAN ================= */
 private function clean($text)
 {
     return strtolower(trim(preg_replace('/\s+/', ' ', $text ?? '')));
 }
+
+
+/* ================= ULTRA SMART TEXT CLEAN ================= */
+private function cleanNameText($text)
+{
+    if (!$text) return $text;
+
+    $text = strtolower($text);
+
+    /* OCR WORD FIX */
+    $text = str_replace([
+        'a0lysis',
+        'ma0gement',
+        'ma0geme nt',
+        'foundatio ns',
+        'applicatio ns',
+        'program ming',
+        'programmi ng',
+        'langauge'
+    ], [
+        'analysis',
+        'management',
+        'management',
+        'foundations',
+        'applications',
+        'programming',
+        'programming',
+        'language'
+    ], $text);
+
+    /*
+    RULE 1
+    0 at start of word → NA
+    0yan → nayan
+    */
+    $text = preg_replace('/\b0([a-z])/', 'na$1', $text);
+
+    /*
+    RULE 2
+    0 inside word → NA
+    so0re → sonare
+    0ndini → nandini
+    */
+    $text = preg_replace('/([a-z])0([a-z])/', '$1na$2', $text);
+
+    /*
+    RULE 3
+    Multiple 0 → NA NA
+    */
+    $text = str_replace('0', 'na', $text);
+
+    /* cleanup */
+    $text = preg_replace('/\s+/', ' ', $text);
+
+    return ucwords(trim($text));
+}
+
+
 
 /* ================= METADATA ================= */
 private function extractMetaFromTopRows($rows)
@@ -52,11 +110,12 @@ private function extractMetaFromTopRows($rows)
     return [
         'branch' => $branch ?? 'UNKNOWN',
         'section' => $section ?? 'UNKNOWN',
-        'semester' => $semester?? 0
+        'semester' => $semester ?? 0
     ];
 }
 
-/* ================= HEADER ================= */
+
+/* ================= HEADER DETECTOR ================= */
 private function findHeaderIndex($rows)
 {
     foreach ($rows as $i => $row) {
@@ -70,6 +129,7 @@ private function findHeaderIndex($rows)
     return null;
 }
 
+
 /* ================= SUBJECT PARSER ================= */
 private function parseSubject($text)
 {
@@ -78,21 +138,22 @@ private function parseSubject($text)
     if (preg_match('/^([A-Z0-9]+)\s+(.*?)\s*\((.*?)\)$/i', $text, $m)) {
         return [
             'code' => trim($m[1]),
-            'name' => trim($m[2]),
-            'faculty' => trim($m[3])
+            'name' => $this->cleanNameText($m[2]),
+            'faculty' => $this->cleanNameText($m[3])
         ];
     }
 
     if (preg_match('/^([A-Z0-9]+)\s+(.*)$/i', $text, $m)) {
         return [
             'code' => trim($m[1]),
-            'name' => trim($m[2]),
+            'name' => $this->cleanNameText($m[2]),
             'faculty' => null
         ];
     }
 
     return ['code'=>null,'name'=>null,'faculty'=>null];
 }
+
 
 /* ================= ERP SAFE COLUMN DETECTOR ================= */
 private function detectOverallColumns($headers)
@@ -126,6 +187,7 @@ private function detectOverallColumns($headers)
 
     return [$totalCol, $percentCol];
 }
+
 
 /* ================= MAIN IMPORT ================= */
 public function import($filename)
@@ -187,8 +249,8 @@ public function import($filename)
 
         $record = array_combine($headers, $row);
 
-        $roll = trim($record['Roll Number'] ?? '');
-        $name = trim($record['Student Name'] ?? '');
+        $roll = strtoupper(trim($record['Roll Number'] ?? ''));
+        $name = $this->cleanNameText(trim($record['Student Name'] ?? ''));
 
         if (!$roll) continue;
 
@@ -226,10 +288,7 @@ public function import($filename)
 
             $parsed = $this->parseSubject($columnName);
 
-            if (!$parsed['code']) {
-                Log::warning("Unknown subject column: ".$columnName);
-                continue;
-            }
+            if (!$parsed['code']) continue;
 
             $subject = Subject::updateOrCreate(
                 ['subject_code'=>$parsed['code']],
@@ -239,7 +298,6 @@ public function import($filename)
                 ]
             );
 
-            /* ⭐ SUBJECT TOTAL AUTO DETECT */
             $subjectTotal = 15;
 
             if (
@@ -270,7 +328,7 @@ public function import($filename)
     }
 
     return response()->json([
-        'message'=>'File IMPORT SUCCESS',
+        'message'=>'FILE IMPORTED SUCCESSFULLY',
         'students_imported'=>$imported,
         'overall_total_detected'=>$overallTotalFromSheet
     ]);

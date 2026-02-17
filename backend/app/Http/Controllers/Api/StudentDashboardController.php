@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 
-
 class StudentDashboardController extends Controller
 {
 
     public function show($bt_id)
     {
+        /* ===== NORMALIZE BTID (VERY IMPORTANT) ===== */
+        $bt_id = strtoupper(trim($bt_id));
+
         $student = Student::where('student_id', $bt_id)
             ->with(['attendances.subject'])
             ->first();
@@ -31,7 +33,7 @@ class StudentDashboardController extends Controller
             'overall' => [
                 'total' => $student->overall_total,
                 'attended' => $student->overall_attended,
-                'percentage' => $student->overall_percentage
+                'percentage' => min(round($student->overall_percentage, 2), 100)
             ],
 
             'subjects' => $student->attendances->map(function ($att) {
@@ -46,7 +48,7 @@ class StudentDashboardController extends Controller
                     'faculty' => $att->subject->faculty,
                     'attended' => $att->attended,
                     'total' => $att->total,
-                    'percentage' => $percentage
+                    'percentage' => min($percentage, 100)
                 ];
             })->values()
 
