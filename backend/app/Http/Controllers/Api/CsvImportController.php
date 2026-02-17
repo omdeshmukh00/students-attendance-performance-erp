@@ -7,69 +7,70 @@ use League\Csv\Reader;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\Attendance;
+use Illuminate\Support\Facades\Log;
 
 class CsvImportController extends Controller
 {
 
-    /* ================= CLEAN ================= */
-    private function clean($text)
-    {
-        return strtolower(trim(preg_replace('/\s+/', ' ', $text ?? '')));
-    }
+/* ================= CLEAN ================= */
+private function clean($text)
+{
+    return strtolower(trim(preg_replace('/\s+/', ' ', $text ?? '')));
+}
 
-    /* ================= METADATA ================= */
-    private function extractMetaFromTopRows($rows)
-    {
-        $section = null;
-        $branch = null;
-        $semester = null;
+/* ================= METADATA ================= */
+private function extractMetaFromTopRows($rows)
+{
+    $section = null;
+    $branch = null;
+    $semester = null;
 
-        foreach (array_slice($rows, 0, 15) as $row) {
+    foreach (array_slice($rows, 0, 15) as $row) {
 
-            $line = strtolower(trim(implode(' ', $row)));
+        $line = strtolower(trim(implode(' ', $row)));
 
-            if (str_contains($line, 'section')) {
-                if (preg_match('/section\s*[:\-]?\s*([a-z0-9\-]+)/i', $line, $m)) {
+        if (str_contains($line, 'section')) {
+            if (preg_match('/section\s*[:\-]?\s*([a-z0-9\-]+)/i', $line, $m)) {
 
-                    $section = strtoupper($m[1]);
+                $section = strtoupper($m[1]);
 
-                    if (str_contains($section, '-')) {
-                        $branch = explode('-', $section)[0];
-                    } else {
-                        $branch = $section;
-                    }
-                }
-            }
-
-            if (str_contains($line, 'semester')) {
-                if (preg_match('/semester\s*[:\-]?\s*(\d+)/i', $line, $m)) {
-                    $semester = (int) $m[1];
+                if (str_contains($section, '-')) {
+                    $branch = explode('-', $section)[0];
+                } else {
+                    $branch = $section;
                 }
             }
         }
 
-        return [
-            'branch' => $branch ?? 'UNKNOWN',
-            'section' => $section ?? 'UNKNOWN',
-            'semester' => $semester ?? 0
-        ];
-    }
-
-    /* ================= HEADER ================= */
-    private function findHeaderIndex($rows)
-    {
-        foreach ($rows as $i => $row) {
-            $line = $this->clean(implode(' ', $row));
-
-            if (str_contains($line, 'roll') && str_contains($line, 'student')) {
-                return $i;
+        if (str_contains($line, 'semester')) {
+            if (preg_match('/semester\s*[:\-]?\s*(\d+)/i', $line, $m)) {
+                $semester = (int) $m[1];
             }
         }
-
-        return null;
     }
 
-    /* ================= SUBJECT PARSER ================= */
+    return [
+        'branch' => $branch ?? 'UNKNOWN',
+        'section' => $section ?? 'UNKNOWN',
+        'semester' => $semester?? 0
+    ];
+}
+
+/* ================= HEADER ================= */
+private function findHeaderIndex($rows)
+{
+    foreach ($rows as $i => $row) {
+        $line = $this->clean(implode(' ', $row));
+
+        if (str_contains($line, 'roll') && str_contains($line, 'student')) {
+            return $i;
+        }
+    }
+
+    return null;
+}
+
+/* ================= SUBJECT PARSER ================= */
 private function parseSubject($text)
 {
     $text = trim(preg_replace('/\s+/', ' ', $text));
@@ -93,6 +94,40 @@ private function parseSubject($text)
     return ['code'=>null,'name'=>null,'faculty'=>null];
 }
 
+/* ================= ERP SAFE COLUMN DETECTOR ================= */
+private function detectOverallColumns($headers)
+{
+    $totalCol = null;
+    $percentCol = null;
+
+    foreach ($headers as $i => $h) {
+
+        $h = strtolower($h);
+        $h = str_replace(["\n", "\r"], " ", $h);
+        $h = preg_replace('/\s+/', ' ', $h);
+        $h = trim($h);
+
+        if (
+            str_contains($h, 'total') &&
+            !str_contains($h, 'lecture') &&
+            !str_contains($h, 'theory') &&
+            !str_contains($h, 'practical')
+        ) {
+            $totalCol = $i;
+        }
+
+        if (
+            str_contains($h, 'percent') ||
+            str_contains($h, '%')
+        ) {
+            $percentCol = $i;
+        }
+    }
+
+    return [$totalCol, $percentCol];
+}
+
+/* ================= MAIN IMPORT ================= */
 public function import($filename)
 {
     set_time_limit(0);
@@ -119,11 +154,13 @@ public function import($filename)
 
     $headers = $rows[$headerIndex];
 
-    // LOCK LAST 2 COLUMNS
-    $totalCol = count($headers) - 2;
-    $percentCol = count($headers) - 1;
+    [$totalCol, $percentCol] = $this->detectOverallColumns($headers);
 
-    // TOTAL LECTURES ROW
+    if ($totalCol === null || $percentCol === null) {
+        Log::error("Overall columns not detected for file: ".$filename);
+        return response()->json(['error'=>'Overall columns not detected'],500);
+    }
+
     $totalLecturesRow = $rows[$headerIndex + 1] ?? [];
 
     $overallTotalFromSheet =
@@ -155,7 +192,6 @@ public function import($filename)
 
         if (!$roll) continue;
 
-        /* ===== OVERALL ===== */
         $attendedRaw = $row[$totalCol] ?? null;
         $percentRaw = $row[$percentCol] ?? null;
 
@@ -176,19 +212,24 @@ public function import($filename)
             ]
         );
 
-        /* ===== SUBJECT + ATTENDANCE IMPORT ===== */
-        foreach ($record as $column=>$value) {
+        /* ===== SUBJECT IMPORT ===== */
+        foreach ($headers as $colIndex => $columnName) {
 
-            if ($value === '' || $value === null) continue;
+            $value = $row[$colIndex] ?? null;
+            if ($value === null || $value === '') continue;
 
-            if (in_array($column, ['#','Roll Number','Student Name'])) continue;
+            if (in_array($columnName, ['#','Roll Number','Student Name'])) continue;
 
-            if (str_contains(strtolower($column), 'total')) continue;
-            if (str_contains(strtolower($column), 'percent')) continue;
-            if (str_contains(strtolower($column), 'additional')) continue;
+            if (str_contains(strtolower($columnName), 'total')) continue;
+            if (str_contains(strtolower($columnName), 'percent')) continue;
+            if (str_contains(strtolower($columnName), 'additional')) continue;
 
-            $parsed = $this->parseSubject($column);
-            if (!$parsed['code']) continue;
+            $parsed = $this->parseSubject($columnName);
+
+            if (!$parsed['code']) {
+                Log::warning("Unknown subject column: ".$columnName);
+                continue;
+            }
 
             $subject = Subject::updateOrCreate(
                 ['subject_code'=>$parsed['code']],
@@ -198,8 +239,17 @@ public function import($filename)
                 ]
             );
 
+            /* ⭐ SUBJECT TOTAL AUTO DETECT */
+            $subjectTotal = 15;
+
+            if (
+                isset($totalLecturesRow[$colIndex]) &&
+                is_numeric($totalLecturesRow[$colIndex])
+            ) {
+                $subjectTotal = (int)$totalLecturesRow[$colIndex];
+            }
+
             $attended = (int)$value;
-            $total = 15; // temporary fallback
 
             Attendance::updateOrCreate(
                 [
@@ -208,8 +258,10 @@ public function import($filename)
                 ],
                 [
                     'attended'=>$attended,
-                    'total'=>$total,
-                    'percentage'=>$total>0 ? ($attended/$total)*100 : 0
+                    'total'=>$subjectTotal,
+                    'percentage'=>$subjectTotal > 0
+                        ? round(($attended/$subjectTotal)*100,2)
+                        : 0
                 ]
             );
         }
@@ -218,11 +270,10 @@ public function import($filename)
     }
 
     return response()->json([
-        'message'=>'IMPORT SUCCESS',
+        'message'=>'File IMPORT SUCCESS',
         'students_imported'=>$imported,
         'overall_total_detected'=>$overallTotalFromSheet
     ]);
 }
-
 
 }
