@@ -12,7 +12,7 @@ return new class extends Migration
 public function up()
 {
     Schema::table('students', function ($table) {
-        $table->unique('student_id');
+       // $table->unique('student_id');
     });
 
     Schema::table('subjects', function ($table) {
@@ -27,7 +27,7 @@ public function up()
 public function down()
 {
     Schema::table('students', function ($table) {
-        $table->dropUnique(['student_id']);
+    //$table->dropUnique(['student_id']);
     });
 
     Schema::table('subjects', function ($table) {

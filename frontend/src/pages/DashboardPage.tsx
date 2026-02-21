@@ -4,21 +4,21 @@ import SubjectCard from "../components/SubjectCard";
 import type { StudentDashboard } from "../types/student";
 
 export default function DashboardPage() {
-  const { btId } = useParams();
+  const { bt_id } = useParams();
 
   const [data, setData] = useState<StudentDashboard | null>(null);
   const [loading, setLoading] = useState(true);
-
+  
   useEffect(() => {
     console.log("Dashboard Mounted");
 
-    if (!btId) {
+    if (!bt_id){
       console.log("No BT ID");
       setLoading(false);
       return;
     }
 
-    const id = btId.toUpperCase();
+    const id = bt_id.toUpperCase();
     console.log("Fetching Student:", id);
 
     fetch(`http://127.0.0.1:8000/api/student/${id}`, {
@@ -44,8 +44,8 @@ export default function DashboardPage() {
         console.log("Fetch Finished");
         setLoading(false);
       });
-  }, [btId]);
-
+  }, [bt_id]);
+  
   /* ===== LOADING ===== */
   if (loading) {
     return (
@@ -74,7 +74,7 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* OVERALL */};
+      {/* OVERALL */}
         <h2 className="text-2xl font-bold text-gray-900 mb-5">
           Overall Attendance
         </h2>

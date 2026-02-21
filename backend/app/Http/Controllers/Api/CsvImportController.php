@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-
+use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use League\Csv\Reader;
 use App\Models\Student;
@@ -74,7 +74,43 @@ private function cleanNameText($text)
     return ucwords(trim($text));
 }
 
+public function uploadAndImport(Request $request)
+{
+    $request->validate([
+        'file' => 'required|mimes:csv,txt|max:10240'
+    ]);
 
+    $file = $request->file('file');
+    $filename = $file->getClientOriginalName();
+
+    // Check duplicate file
+    $alreadyImported = \DB::table('imported_files')
+        ->where('filename', $filename)
+        ->exists();
+
+    if ($alreadyImported) {
+        return response()->json([
+            'message' => 'File already imported.'
+        ], 409);
+    }
+
+    // Store file
+    $file->storeAs('csv', $filename);
+
+    // Import file
+    $this->import($filename);
+
+    // Mark as imported
+    \DB::table('imported_files')->insert([
+        'filename' => $filename,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    return response()->json([
+        'message' => 'File uploaded and imported successfully.'
+    ]);
+}
 
 /* ================= METADATA ================= */
 private function extractMetaFromTopRows($rows)
@@ -187,6 +223,7 @@ private function detectOverallColumns($headers)
 
     return [$totalCol, $percentCol];
 }
+
 
 
 /* ================= MAIN IMPORT ================= */
@@ -333,5 +370,6 @@ public function import($filename)
         'overall_total_detected'=>$overallTotalFromSheet
     ]);
 }
+
 
 }
