@@ -11,21 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('subjects', function (Blueprint $table) {
+        Schema::create('import_logs', function (Blueprint $table) {
             $table->id();
-            $table->string('subject_code')->unique();
-            $table->string('subject_name');
-            $table->string('faculty')->nullable();
-            $table->timestamps();
-        });
-
-    }
-
+            $table->string('file_name');
+            $table->string('file_hash')->unique();
+        $table->integer('rows_processed')->default(0);
+        $table->timestamps();
+    });
+}
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::dropIfExists('subjects');
+        Schema::dropIfExists('import_logs');
     }
 };
