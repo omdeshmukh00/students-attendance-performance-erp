@@ -71,6 +71,12 @@ export default function DashboardPage() {
             {data.student_name}
           </h1>
 
+          <div className="mt-3 flex items-center gap-3">
+            <span className="bg-gray-200 text-gray-800 px-4 py-1 rounded-full text-sm font-semibold">
+             <p>ID: {data.student_id}</p> 
+            </span>
+          </div>
+
           <p className="text-gray-600 font-semibold mt-3 text-lg">
             {data.branch} • Sem {data.semester} • {data.section}
           </p>
