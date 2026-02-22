@@ -5,77 +5,69 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\StudentDashboardController;
 use App\Http\Controllers\Api\CsvImportController;
-
 use App\Http\Controllers\Api\AdminAuthController;
 use App\Http\Controllers\Api\AdminAnalyticsController;
-
+use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\AdminController;
 
 
-
 /*
 |--------------------------------------------------------------------------
-| STUDENT APIs
+| Student APIs
 |--------------------------------------------------------------------------
 */
 
-Route::get('/students', [StudentController::class, 'index']);
-
-Route::post('/students', [StudentController::class, 'store']);
-
-Route::get('/students/{id}', [StudentController::class, 'show']);
-
-/* Student Dashboard */
 Route::get('/student/{bt_id}', [StudentDashboardController::class, 'show']);
 
+Route::get('/students', [StudentController::class, 'index']);
+Route::post('/students', [StudentController::class, 'store']);
+Route::get('/students/{id}', [StudentController::class, 'show']);
 
 
 /*
 |--------------------------------------------------------------------------
-| CSV IMPORT (Manual Trigger)
+| CSV Import
 |--------------------------------------------------------------------------
 */
 
 Route::get('/import-csv/{filename}', [CsvImportController::class, 'import']);
 
 
-
 /*
 |--------------------------------------------------------------------------
-| ADMIN AUTH
+| Admin Auth
 |--------------------------------------------------------------------------
 */
 
 Route::post('/admin/login', [AdminAuthController::class, 'login']);
 
 
-
 /*
 |--------------------------------------------------------------------------
-| ADMIN PANEL
+| Admin Panel
 |--------------------------------------------------------------------------
 */
 
 Route::prefix('admin')->group(function () {
 
-    /* Upload CSV */
     Route::post('/upload', [AdminController::class, 'uploadCsv']);
 
-    /* Run Auto Sync */
-    Route::post('/sync', [AdminController::class, 'runSync']);
-
-    /* Students List */
     Route::get('/students', [AdminController::class, 'students']);
 
-    /* Import Logs */
     Route::get('/imports', [AdminController::class, 'imports']);
 
+    Route::post('/sync', [AdminController::class, 'runSync']);
 
-    /*
-    |--------------------------------------------------------------------------
-    | ADMIN ANALYTICS
-    |--------------------------------------------------------------------------
-    */
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| Analytics
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('admin')->group(function () {
 
     Route::get('/overview', [AdminAnalyticsController::class, 'collegeOverview']);
 
@@ -90,12 +82,19 @@ Route::prefix('admin')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| TEST ROUTE
+| Dashboard
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/admin/analytics', [AnalyticsController::class, 'dashboard']);
+
+
+/*
+|--------------------------------------------------------------------------
+| Test
 |--------------------------------------------------------------------------
 */
 
 Route::get('/admin/test', function () {
-    return response()->json([
-        "status" => "Admin API working"
-    ]);
+    return "Admin API working";
 });
