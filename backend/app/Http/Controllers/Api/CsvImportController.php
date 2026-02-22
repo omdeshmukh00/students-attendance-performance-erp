@@ -8,75 +8,40 @@ use App\Models\Student;
 use App\Models\Subject;
 use App\Models\Attendance;
 use Illuminate\Support\Facades\Log;
+use App\Services\AttendanceEligibilityService;
+use App\Models\AttendanceEligibility;
 
 class CsvImportController extends Controller
 {
 
-/* ================= BASIC CLEAN ================= */
 private function clean($text)
 {
     return strtolower(trim(preg_replace('/\s+/', ' ', $text ?? '')));
 }
 
-
-/* ================= ULTRA SMART TEXT CLEAN ================= */
 private function cleanNameText($text)
 {
     if (!$text) return $text;
 
     $text = strtolower($text);
 
-    /* OCR WORD FIX */
     $text = str_replace([
-        'a0lysis',
-        'ma0gement',
-        'ma0geme nt',
-        'foundatio ns',
-        'applicatio ns',
-        'program ming',
-        'programmi ng',
-        'langauge'
+        'a0lysis','ma0gement','ma0geme nt','foundatio ns',
+        'applicatio ns','program ming','programmi ng','langauge'
     ], [
-        'analysis',
-        'management',
-        'management',
-        'foundations',
-        'applications',
-        'programming',
-        'programming',
-        'language'
+        'analysis','management','management','foundations',
+        'applications','programming','programming','language'
     ], $text);
 
-    /*
-    RULE 1
-    0 at start of word → NA
-    0yan → nayan
-    */
     $text = preg_replace('/\b0([a-z])/', 'na$1', $text);
-
-    /*
-    RULE 2
-    0 inside word → NA
-    so0re → sonare
-    0ndini → nandini
-    */
     $text = preg_replace('/([a-z])0([a-z])/', '$1na$2', $text);
-
-    /*
-    RULE 3
-    Multiple 0 → NA NA
-    */
     $text = str_replace('0', 'na', $text);
 
-    /* cleanup */
     $text = preg_replace('/\s+/', ' ', $text);
 
     return ucwords(trim($text));
 }
 
-
-
-/* ================= METADATA ================= */
 private function extractMetaFromTopRows($rows)
 {
     $section = null;
@@ -114,8 +79,6 @@ private function extractMetaFromTopRows($rows)
     ];
 }
 
-
-/* ================= HEADER DETECTOR ================= */
 private function findHeaderIndex($rows)
 {
     foreach ($rows as $i => $row) {
@@ -129,8 +92,6 @@ private function findHeaderIndex($rows)
     return null;
 }
 
-
-/* ================= SUBJECT PARSER ================= */
 private function parseSubject($text)
 {
     $text = trim(preg_replace('/\s+/', ' ', $text));
@@ -154,8 +115,6 @@ private function parseSubject($text)
     return ['code'=>null,'name'=>null,'faculty'=>null];
 }
 
-
-/* ================= ERP SAFE COLUMN DETECTOR ================= */
 private function detectOverallColumns($headers)
 {
     $totalCol = null;
@@ -188,8 +147,6 @@ private function detectOverallColumns($headers)
     return [$totalCol, $percentCol];
 }
 
-
-/* ================= MAIN IMPORT ================= */
 public function import($filename)
 {
     set_time_limit(0);
@@ -233,19 +190,12 @@ public function import($filename)
 
     $imported = 0;
 
-    /* ===== STUDENT LOOP ===== */
     for ($i = $headerIndex + 2; $i < count($rows); $i++) {
 
         $row = $rows[$i];
         if (!array_filter($row)) continue;
 
-        if (count($row) < count($headers)) {
-            $row = array_pad($row, count($headers), null);
-        }
-
-        if (count($row) > count($headers)) {
-            $row = array_slice($row, 0, count($headers));
-        }
+        $row = array_pad($row, count($headers), null);
 
         $record = array_combine($headers, $row);
 
@@ -259,7 +209,6 @@ public function import($filename)
 
         $overallAttended = is_numeric($attendedRaw) ? (int)$attendedRaw : 0;
         $overallPercent = is_numeric($percentRaw) ? (float)$percentRaw : 0;
-        $overallTotal = $overallTotalFromSheet;
 
         $student = Student::updateOrCreate(
             ['student_id'=>$roll],
@@ -268,26 +217,23 @@ public function import($filename)
                 'branch'=>$meta['branch'],
                 'section'=>$meta['section'],
                 'semester'=>$meta['semester'],
-                'overall_total'=>$overallTotal,
+                'overall_total'=>$overallTotalFromSheet,
                 'overall_attended'=>$overallAttended,
                 'overall_percentage'=>$overallPercent
             ]
         );
 
-        /* ===== SUBJECT IMPORT ===== */
         foreach ($headers as $colIndex => $columnName) {
 
             $value = $row[$colIndex] ?? null;
             if ($value === null || $value === '') continue;
 
             if (in_array($columnName, ['#','Roll Number','Student Name'])) continue;
-
             if (str_contains(strtolower($columnName), 'total')) continue;
             if (str_contains(strtolower($columnName), 'percent')) continue;
             if (str_contains(strtolower($columnName), 'additional')) continue;
 
             $parsed = $this->parseSubject($columnName);
-
             if (!$parsed['code']) continue;
 
             $subject = Subject::updateOrCreate(
@@ -298,18 +244,13 @@ public function import($filename)
                 ]
             );
 
-            $subjectTotal = 15;
-
-            if (
-                isset($totalLecturesRow[$colIndex]) &&
-                is_numeric($totalLecturesRow[$colIndex])
-            ) {
-                $subjectTotal = (int)$totalLecturesRow[$colIndex];
-            }
+            $subjectTotal = isset($totalLecturesRow[$colIndex])
+                ? (int)$totalLecturesRow[$colIndex]
+                : 15;
 
             $attended = (int)$value;
 
-            Attendance::updateOrCreate(
+            $attendance = Attendance::updateOrCreate(
                 [
                     'student_id'=>$student->id,
                     'subject_id'=>$subject->id
@@ -322,6 +263,22 @@ public function import($filename)
                         : 0
                 ]
             );
+
+            $eligibility = AttendanceEligibilityService::calculate($attended, $subjectTotal);
+
+            AttendanceEligibility::updateOrCreate(
+                [
+                    'student_id'=>$student->id,
+                    'subject_id'=>$subject->id
+                ],
+                [
+                    'attendance_percentage'=>$eligibility['percentage'],
+                    'eligible_mse1'=>$eligibility['mse1'],
+                    'eligible_mse2'=>$eligibility['mse2'],
+                    'eligible_endsem'=>$eligibility['endsem'],
+                    'eligible_incentive'=>$eligibility['incentive']
+                ]
+            );
         }
 
         $imported++;
@@ -329,8 +286,7 @@ public function import($filename)
 
     return response()->json([
         'message'=>'FILE IMPORTED SUCCESSFULLY',
-        'students_imported'=>$imported,
-        'overall_total_detected'=>$overallTotalFromSheet
+        'students_imported'=>$imported
     ]);
 }
 

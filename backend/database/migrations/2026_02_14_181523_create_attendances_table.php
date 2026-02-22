@@ -18,8 +18,7 @@ return new class extends Migration
             $table->integer('attended');
             $table->integer('total');
 
-            // IMPORTANT: prevents duplicate rows
-            $table->unique(['student_id', 'subject_id']);
+            $table->float('percentage');
 
             $table->timestamps();
         });

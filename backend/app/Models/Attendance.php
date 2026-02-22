@@ -7,20 +7,20 @@ use Illuminate\Database\Eloquent\Model;
 class Attendance extends Model
 {
     protected $fillable = [
-    'student_id',
-    'subject_id',
-    'attended',
-    'total'
-];
+        'student_id',
+        'subject_id',
+        'attended',
+        'total',
+        'percentage'
+    ];
 
-public function student()
-{
-    return $this->belongsTo(Student::class);
-}
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
 
-public function subject()
-{
-    return $this->belongsTo(Subject::class);
-}
-
+    public function subject()
+    {
+        return $this->belongsTo(Subject::class);
+    }
 }

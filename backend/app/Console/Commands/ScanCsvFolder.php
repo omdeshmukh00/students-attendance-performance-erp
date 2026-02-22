@@ -9,29 +9,53 @@ use App\Jobs\ProcessCsvImport;
 class ScanCsvFolder extends Command
 {
     protected $signature = 'csv:scan';
-    protected $description = 'Scan CSV folder and import new files';
+    protected $description = 'Scan storage/app/csv folder and import new CSV files';
 
     public function handle()
     {
-        $files = glob(storage_path('app/csv/*.csv'));
+        $folder = storage_path('app/csv');
+
+        if (!is_dir($folder)) {
+            $this->error("CSV folder not found: " . $folder);
+            return self::FAILURE;
+        }
+
+        $files = glob($folder . '/*.csv');
+
+        if (!$files) {
+            $this->warn("No CSV files found.");
+            return self::SUCCESS;
+        }
 
         $this->info("Files detected: " . count($files));
 
         foreach ($files as $file) {
 
+            if (!file_exists($file)) {
+                $this->error("File missing: " . $file);
+                continue;
+            }
+
             $hash = md5_file($file);
 
-            $exists = ImportLog::where('file_hash', $hash)->exists();
+            if (!$hash) {
+                $this->error("Hash failed: " . basename($file));
+                continue;
+            }
 
-            if ($exists) {
+            $alreadyImported = ImportLog::where('file_hash', $hash)->exists();
+
+            if ($alreadyImported) {
                 $this->line("Skipped (already imported): " . basename($file));
                 continue;
             }
 
-            ProcessCsvImport::dispatch($file, $hash);
+            (new ProcessCsvImport($file, $hash))->handle();
 
-            $this->info("Queued import: " . basename($file));
+            $this->info("Imported: " . basename($file));
         }
+
+        $this->info("Scan complete.");
 
         return self::SUCCESS;
     }

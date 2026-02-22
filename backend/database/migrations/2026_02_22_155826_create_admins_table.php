@@ -8,22 +8,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('import_logs', function (Blueprint $table) {
-
+        Schema::create('admins', function (Blueprint $table) {
             $table->id();
-
-            $table->string('file_name');
-
-            $table->string('file_hash')->unique();
-
-            $table->integer('rows_processed')->default(0);
-
+            $table->string('email')->unique();
+            $table->string('password');
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('import_logs');
+        Schema::dropIfExists('admins');
     }
 };
