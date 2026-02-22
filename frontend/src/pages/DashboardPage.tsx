@@ -64,14 +64,24 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-100 px-6 md:px-10 py-10">
 
       {/* HEADER */}
-      <div className="bg-white rounded-3xl shadow-lg p-10 mb-12">
-        <h1 className="text-4xl md:text-5xl font-black text-gray-900">
-          {data.student_name}
-        </h1>
+      <div className="bg-white rounded-3xl shadow-lg p-10 mb-12 flex justify-between items-start">
 
-        <p className="text-gray-600 font-semibold mt-3 text-lg">
-          {data.branch} • Sem {data.semester} • {data.section}
-        </p>
+        <div>
+          <h1 className="text-4xl md:text-5xl font-black text-gray-900">
+            {data.student_name}
+          </h1>
+
+          <p className="text-gray-600 font-semibold mt-3 text-lg">
+            {data.branch} • Sem {data.semester} • {data.section}
+          </p>
+        </div>
+
+        {data.overall.percentage < 55 && (
+          <div className="bg-red-600 text-white px-6 py-3 rounded-full text-sm font-bold shadow-lg animate-pulse">
+            ⚠ DETAINED
+      </div>
+        )}
+
       </div>
 
       {/* OVERALL */}
