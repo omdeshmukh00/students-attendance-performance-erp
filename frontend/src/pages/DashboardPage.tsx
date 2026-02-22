@@ -4,6 +4,9 @@ import SubjectCard from "../components/SubjectCard";
 import type { StudentDashboard } from "../types/student";
 
 export default function DashboardPage() {
+  useEffect(() => {
+    document.title = "Student - Dashboard";
+  }, []);
   const { btId } = useParams();
 
   const [data, setData] = useState<StudentDashboard | null>(null);
@@ -68,79 +71,117 @@ export default function DashboardPage() {
         <h1 className="text-4xl md:text-5xl font-black text-gray-900">
           {data.student_name}
         </h1>
-
+        <p className="text-sm bg-gray-200 inline-block px-3 py-1 rounded-md font-semibold mt-2">
+          {data.student_id}
+        </p>
         <p className="text-gray-600 font-semibold mt-3 text-lg">
           {data.branch} • Sem {data.semester} • {data.section}
         </p>
       </div>
 
-      {/* OVERALL */};
-        <h2 className="text-2xl font-bold text-gray-900 mb-5">
-          Overall Attendance
-        </h2>
-        
-        {(() => {
-          const percent = Math.ceil(data.overall.percentage);
-        
-          const radius = 40;
-          const stroke = 7;
-          const normalizedRadius = radius - stroke * 0.5;
-          const circumference = normalizedRadius * 2 * Math.PI;
-          const strokeDashoffset =
-            circumference - (percent / 100) * circumference;
-        
-          return (
-            <div className="bg-white rounded-2xl shadow-md p-8 w-[320px] mb-12 flex items-center gap-6">
-            
-              {/* Circle */}
-              <div className="relative w-24 h-24 flex items-center justify-center">
-        
-                <svg
-                  height={radius * 2}
-                  width={radius * 2}
-                  className="rotate-[-90deg]"
-                >
-                  {/* Background */}
-                  <circle
-                    stroke="#e5e7eb"
-                    fill="transparent"
-                    strokeWidth={stroke}
-                    r={normalizedRadius}
-                    cx={radius}
-                    cy={radius}
-                  />
-        
-                  {/* Progress */}
-                  <circle
-                    stroke="#2563eb"
-                    fill="transparent"
-                    strokeWidth={stroke}
-                    strokeDasharray={circumference + " " + circumference}
-                    style={{ strokeDashoffset }}
-                    strokeLinecap="round"
-                    r={normalizedRadius}
-                    cx={radius}
-                    cy={radius}
-                  />
-                </svg>
-        
-                {/* Center Text */}
-                <div className="absolute text-blue-600 font-extrabold text-xl">
-                  {percent}%
-                </div>
-              </div>
-        
-              {/* Text Side */}
-              <div>
-                <p className="text-gray-500 font-medium">Overall</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  Attendance Performance
-                </p>
-              </div>
-        
-            </div>
-          );
-        })()}
+{/* OVERALL + ELIGIBILITY */}
+<h2 className="text-2xl font-bold text-gray-900 mb-5">
+  Overall Attendance & Student Status
+</h2>
+
+<div className="flex flex-wrap gap-8 mb-12">
+
+  {/* OVERALL CARD */}
+  {(() => {
+    const percent = data.overall.percentage;
+
+    const radius = 40;
+    const stroke = 7;
+    const normalizedRadius = radius - stroke * 0.5;
+    const circumference = normalizedRadius * 2 * Math.PI;
+    const strokeDashoffset =
+      circumference - (percent / 100) * circumference;
+
+    return (
+      <div className="bg-white rounded-2xl shadow-md p-8 w-[320px] flex items-center gap-6">
+
+        {/* Circle */}
+        <div className="relative w-24 h-24 flex items-center justify-center">
+
+          <svg
+            height={radius * 2}
+            width={radius * 2}
+            className="rotate-[-90deg]"
+          >
+            <circle
+              stroke="#e5e7eb"
+              fill="transparent"
+              strokeWidth={stroke}
+              r={normalizedRadius}
+              cx={radius}
+              cy={radius}
+            />
+
+            <circle
+              stroke="#2563eb"
+              fill="transparent"
+              strokeWidth={stroke}
+              strokeDasharray={circumference + " " + circumference}
+              style={{ strokeDashoffset }}
+              strokeLinecap="round"
+              r={normalizedRadius}
+              cx={radius}
+              cy={radius}
+            />
+          </svg>
+
+          <div className="absolute text-blue-600 font-extrabold text-xl">
+            {percent}%
+          </div>
+        </div>
+
+        <div>
+          <p className="text-gray-500 font-medium">Overall</p>
+          <p className="text-sm text-gray-400 mt-1">
+            Attendance Performance
+          </p>
+        </div>
+
+      </div>
+    );
+  })()}
+
+  {/* ELIGIBILITY CARD */}
+  <div className="bg-white rounded-2xl shadow-md p-8 w-[320px]">
+
+    <h3 className="text-lg font-bold text-gray-900 mb-4">
+      Exam Eligibility
+    </h3>
+
+    <div className="space-y-2 text-sm font-semibold">
+
+      <p className={`${data.eligibility.mse1 ? "text-green-600" : "text-red-500"}`}>
+        MSE 1 : {data.eligibility.mse1 ? "Eligible" : "Not Eligible"}
+      </p>
+
+      <p className={`${data.eligibility.mse2 ? "text-green-600" : "text-red-500"}`}>
+        MSE 2 : {data.eligibility.mse2 ? "Eligible" : "Not Eligible"}
+      </p>
+
+      <p className={`${data.eligibility.exam_form ? "text-green-600" : "text-red-500"}`}>
+        Exam Form : {data.eligibility.exam_form ? "Allowed" : "Blocked"}
+      </p>
+
+      <p className={`${data.eligibility.incentive ? "text-green-600" : "text-gray-500"}`}>
+        Incentive : {data.eligibility.incentive ? "Yes" : "No"}
+      </p>
+
+      {data.eligibility.detained && (
+        <p className="text-red-600 font-bold pt-2">
+          🚫 Student Detained
+        </p>
+      )}
+
+    </div>
+
+  </div>
+
+</div>
         
 
       {/* SUBJECTS */}

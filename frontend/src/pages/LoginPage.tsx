@@ -1,7 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
+    useEffect(() => {
+    document.title = "Student - Login";
+  }, []);
+
   const [btId, setBtId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -62,7 +66,7 @@ export default function LoginPage() {
 
         {/* TITLE */}
         <h1 className="text-center text-2xl font-bold text-gray-900 mt-2 mb-4">
-          Student Login
+          STUDENT LOGIN
         </h1>
 
         {/* INPUTS */}
