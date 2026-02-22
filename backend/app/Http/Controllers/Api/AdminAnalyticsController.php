@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Student;
+use App\Models\Subject;
 
 class AdminAnalyticsController extends Controller
 {
@@ -25,18 +26,24 @@ class AdminAnalyticsController extends Controller
 
         foreach ($students as $student) {
 
-            $percent = ceil($student->overall_percentage);
+            $percent = $student->overall_total > 0
+                ? ceil(($student->overall_attended / $student->overall_total) * 100)
+                : 0;
 
             if ($percent >= 65) {
                 $eligible++;
-            }
-
-            if ($percent < 65) {
+            } else {
                 $defaulters++;
             }
         }
 
-        $average = ceil($students->avg('overall_percentage'));
+        $average = ceil(
+            $students->map(function ($s) {
+                return $s->overall_total > 0
+                    ? ($s->overall_attended / $s->overall_total) * 100
+                    : 0;
+            })->avg()
+        );
 
         return response()->json([
             'total_students' => $totalStudents,
@@ -48,7 +55,7 @@ class AdminAnalyticsController extends Controller
 
     /*
     =================================
-    DEFAULTER LIST
+    DEFAULTERS LIST
     =================================
     */
 
@@ -56,26 +63,23 @@ class AdminAnalyticsController extends Controller
     {
         $students = Student::all();
 
-        $list = $students->filter(function ($student) {
+        $data = $students
+            ->map(function ($s) {
 
-            $percent = ceil($student->overall_percentage);
+                $percent = $s->overall_total > 0
+                    ? ceil(($s->overall_attended / $s->overall_total) * 100)
+                    : 0;
 
-            return $percent < 65;
-        })
-        ->values()
-        ->map(function ($student) {
+                return [
+                    'bt_id' => $s->student_id,
+                    'name' => $s->name,
+                    'percentage' => $percent
+                ];
+            })
+            ->filter(fn($s) => $s['percentage'] < 65)
+            ->values();
 
-            return [
-                'student_id' => $student->student_id,
-                'name' => $student->name,
-                'branch' => $student->branch,
-                'section' => $student->section,
-                'semester' => $student->semester,
-                'attendance' => ceil($student->overall_percentage)
-            ];
-        });
-
-        return response()->json($list);
+        return response()->json($data);
     }
 
     /*
@@ -97,10 +101,21 @@ class AdminAnalyticsController extends Controller
             $total = $group->count();
 
             $defaulters = $group->filter(function ($s) {
-                return ceil($s->overall_percentage) < 65;
+
+                $percent = $s->overall_total > 0
+                    ? ceil(($s->overall_attended / $s->overall_total) * 100)
+                    : 0;
+
+                return $percent < 65;
             })->count();
 
-            $avg = ceil($group->avg('overall_percentage'));
+            $avg = ceil(
+                $group->map(function ($s) {
+                    return $s->overall_total > 0
+                        ? ($s->overall_attended / $s->overall_total) * 100
+                        : 0;
+                })->avg()
+            );
 
             $data[] = [
                 'branch' => $branch,
@@ -121,49 +136,27 @@ class AdminAnalyticsController extends Controller
 
     public function subjectStats()
     {
-        $students = Student::with('attendances.subject')->get();
+        $subjects = Subject::with('attendances')->get();
 
-        $subjects = [];
+        $data = $subjects->map(function ($subject) {
 
-        foreach ($students as $student) {
+            $att = $subject->attendances;
 
-            foreach ($student->attendances as $att) {
+            $totalAttended = $att->sum('attended');
+            $totalLectures = $att->sum('total');
 
-                $code = $att->subject->subject_code;
+            $percentage = $totalLectures > 0
+                ? ceil(($totalAttended / $totalLectures) * 100)
+                : 0;
 
-                if (!isset($subjects[$code])) {
-
-                    $subjects[$code] = [
-                        'subject_code' => $code,
-                        'subject_name' => $att->subject->subject_name,
-                        'total_students' => 0,
-                        'total_percent' => 0
-                    ];
-                }
-
-                $percent = $att->total > 0
-                    ? ceil(($att->attended / $att->total) * 100)
-                    : 0;
-
-                $subjects[$code]['total_students']++;
-                $subjects[$code]['total_percent'] += $percent;
-            }
-        }
-
-        $result = [];
-
-        foreach ($subjects as $sub) {
-
-            $avg = ceil($sub['total_percent'] / $sub['total_students']);
-
-            $result[] = [
-                'subject_code' => $sub['subject_code'],
-                'subject_name' => $sub['subject_name'],
-                'average_attendance' => $avg,
-                'students' => $sub['total_students']
+            return [
+                'subject_code' => $subject->subject_code,
+                'subject_name' => $subject->subject_name,
+                'faculty' => $subject->faculty,
+                'percentage' => $percentage
             ];
-        }
+        });
 
-        return response()->json($result);
+        return response()->json($data);
     }
 }
