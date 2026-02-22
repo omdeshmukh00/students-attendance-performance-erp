@@ -77,38 +77,46 @@ private function cleanNameText($text)
 public function uploadAndImport(Request $request)
 {
     $request->validate([
-        'file' => 'required|mimes:csv,txt|max:10240'
+        'files' => 'required',
+        'files.*' => 'mimes:csv,txt|max:10240'
     ]);
 
-    $file = $request->file('file');
-    $filename = $file->getClientOriginalName();
+    $responses = [];
 
-    // Check duplicate file
-    $alreadyImported = \DB::table('imported_files')
-        ->where('filename', $filename)
-        ->exists();
+    foreach ($request->file('files') as $file) {
 
-    if ($alreadyImported) {
-        return response()->json([
-            'message' => 'File already imported.'
-        ], 409);
+        $filename = $file->getClientOriginalName();
+
+        $alreadyImported = \DB::table('imported_files')
+            ->where('filename', $filename)
+            ->exists();
+
+        if ($alreadyImported) {
+            $responses[] = [
+                'file' => $filename,
+                'status' => 'Already Imported'
+            ];
+            continue;
+        }
+
+        $file->storeAs('csv', $filename);
+
+        $this->import($filename);
+
+        \DB::table('imported_files')->insert([
+            'filename' => $filename,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $responses[] = [
+            'file' => $filename,
+            'status' => 'Imported Successfully'
+        ];
     }
 
-    // Store file
-    $file->storeAs('csv', $filename);
-
-    // Import file
-    $this->import($filename);
-
-    // Mark as imported
-    \DB::table('imported_files')->insert([
-        'filename' => $filename,
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-
     return response()->json([
-        'message' => 'File uploaded and imported successfully.'
+        'results' => $responses
     ]);
 }
 
