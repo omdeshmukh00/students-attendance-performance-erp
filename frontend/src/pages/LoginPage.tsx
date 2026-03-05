@@ -19,45 +19,45 @@ export default function LoginPage() {
 
   const navigate = useNavigate();
 
- const handleLogin = async () => {
+  const handleLogin = async () => {
 
-  if (!btId.trim()) {
-    setError("Enter correct ID");
-    return;
-  }
+    if (!btId.trim()) {
+      setError("Enter correct ID");
+      return;
+    }
 
-  const id = btId.toUpperCase();
+    const id = btId.toUpperCase();
 
-  const res = await fetch("http://localhost:8000/login", {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      student_id: id
-    })
-  });
+    const res = await fetch("http://localhost:8000/login", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        student_id: id
+      })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (!res.ok) {
-    setError(data.message || "Login failed");
-    return;
-  }
+    if (!res.ok) {
+      setError(data.message || "Login failed");
+      return;
+    }
 
-  navigate(`/dashboard/${id}`);
-};
+    navigate(`/dashboard/${id}`);
+  };
   // ENTER KEY SUPPORT
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleLogin();
   };
 
-  
-  return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4 font-roboto">
 
-      <div className="bg-white shadow-xl rounded-2xl w-full max-w-md p-10">
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4 font-roboto">
+
+      <div className="bg-white shadow-2xl rounded-2xl w-full max-w-md p-10 border border-slate-200">
 
         {/* LOGO */}
         <div className="flex justify-center mb-6">
@@ -69,7 +69,7 @@ export default function LoginPage() {
         </div>
 
         {/* TITLE */}
-        <h1 className="text-center text-2xl font-bold text-gray-900 mt-2 mb-4">
+        <h1 className="text-center text-2xl font-bold text-slate-800 mt-2 mb-4">
           STUDENT LOGIN
         </h1>
 
@@ -77,7 +77,7 @@ export default function LoginPage() {
         <div className="space-y-5">
 
           <div>
-            <label className="block text-sm font-semibold text-gray-600 mb-1">
+            <label className="block text-sm font-semibold text-slate-600 mb-1">
               Student ID
             </label>
             <input
@@ -85,12 +85,12 @@ export default function LoginPage() {
               onChange={(e) => setBtId(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Student ID (e.g., BT240034CS)"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-600 mb-1">
+            <label className="block text-sm font-semibold text-slate-600 mb-1">
               Password
             </label>
             <input
@@ -99,7 +99,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Password (e.g., 123456)"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
 
@@ -114,7 +114,7 @@ export default function LoginPage() {
           <button
             onClick={handleLogin}
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition disabled:opacity-60"
+            className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg transition-all shadow-lg hover:shadow-orange-500/30 disabled:opacity-60"
           >
             {loading ? "Checking..." : "LOGIN"}
           </button>

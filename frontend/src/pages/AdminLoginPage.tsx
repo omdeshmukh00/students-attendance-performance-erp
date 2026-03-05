@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { adminLogin } from "../types/admin";
 
 export default function AdminLoginPage() {
-        useEffect(() => {
-        document.title = "Admin - Login";
-      }, []);
+  useEffect(() => {
+    document.title = "Admin - Login";
+  }, []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,9 +32,9 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-200 to-blue-100">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
 
-      <div className="bg-white w-[420px] rounded-2xl shadow-xl p-10">
+      <div className="bg-white w-[420px] rounded-2xl shadow-2xl p-10 border border-slate-200">
 
         <div className="flex flex-col items-center mb-6">
 
@@ -49,7 +49,7 @@ export default function AdminLoginPage() {
         <form onSubmit={handleLogin} className="space-y-4">
 
           <div>
-            <label className="text-sm font-medium text-gray-600">
+            <label className="text-sm font-medium text-slate-600">
               Admin mail
             </label>
 
@@ -58,13 +58,13 @@ export default function AdminLoginPage() {
               placeholder="Enter Admin mail(eg. [EMAIL_ADDRESS]"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full mt-1 border rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full mt-1 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-orange-500"
               required
             />
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-600">
+            <label className="text-sm font-medium text-slate-600">
               Password
             </label>
 
@@ -73,7 +73,7 @@ export default function AdminLoginPage() {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full mt-1 border rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full mt-1 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-orange-500"
               required
             />
           </div>
@@ -84,7 +84,7 @@ export default function AdminLoginPage() {
 
           <button
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold transition"
+            className="w-full bg-orange-600 hover:bg-orange-700 text-white py-2.5 rounded-lg shadow-lg hover:shadow-orange-500/30 font-semibold transition-all mt-4"
           >
             {loading ? "Logging in..." : "LOGIN"}
           </button>

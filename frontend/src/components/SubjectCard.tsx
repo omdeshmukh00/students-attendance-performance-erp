@@ -26,11 +26,11 @@ export default function SubjectCard({ subject }: Props) {
 
       {/* LEFT TEXT */}
       <div>
-        <h3 className="font-bold text-gray-900 text-lg">
+        <h3 className="font-bold text-slate-800 text-lg">
           {subject.subject_code} — {subject.subject_name}
         </h3>
 
-        <p className="text-gray-500 mt-1 text-sm font-medium">
+        <p className="text-slate-500 mt-1 text-sm font-medium">
           {subject.faculty}
         </p>
       </div>
@@ -45,7 +45,7 @@ export default function SubjectCard({ subject }: Props) {
 
             {/* Background ring */}
             <circle
-              stroke="#e5e7eb"
+              stroke="#e2e8f0"
               fill="transparent"
               strokeWidth={stroke}
               r={normalizedRadius}
@@ -55,7 +55,7 @@ export default function SubjectCard({ subject }: Props) {
 
             {/* Progress ring */}
             <circle
-              stroke="#2563eb"
+              stroke="#ea580c"
               fill="transparent"
               strokeWidth={stroke}
               strokeDasharray={circumference + " " + circumference}
@@ -68,7 +68,7 @@ export default function SubjectCard({ subject }: Props) {
           </svg>
 
           {/* ⭐ CENTER TEXT */}
-          <div className="absolute text-blue-600 font-bold text-lg">
+          <div className="absolute text-orange-600 font-bold text-lg">
             {percent}%
           </div>
 
@@ -76,10 +76,10 @@ export default function SubjectCard({ subject }: Props) {
 
         {/* LECTURES */}
         <div className="text-right">
-          <p className="font-bold text-gray-900">
+          <p className="font-bold text-slate-800">
             {subject.attended}/{subject.total}
           </p>
-          <p className="text-xs text-gray-500">Lectures</p>
+          <p className="text-xs text-slate-500">Lectures</p>
         </div>
 
       </div>

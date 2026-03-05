@@ -73,7 +73,7 @@ export default function DashboardPage() {
   /* ===== LOADING ===== */
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white text-gray-500 text-lg font-semibold">
+      <div className="min-h-screen flex items-center justify-center bg-white text-slate-500 text-lg font-semibold">
         Loading Dashboard...
       </div>
     );
@@ -85,149 +85,154 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 px-6 md:px-10 py-10">
+    <div className="min-h-screen bg-slate-100 pb-10">
 
       {/* HEADER */}
-      <div className="bg-white rounded-3xl shadow-lg p-10 mb-12">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-4xl md:text-5xl font-black text-gray-900">
-              {data.student_name}
-            </h1>
-            <p className="text-sm bg-gray-200 inline-block px-3 py-1 rounded-md font-semibold mt-2">
-              {data.student_id}
-            </p>
-            <p className="text-gray-600 font-semibold mt-3 text-lg">
-              {data.branch} • Sem {data.semester} • {data.section}
-            </p>
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 md:px-10 pt-10 pb-32">
+        <div className="bg-white/10 backdrop-blur-md border border-slate-700/50 rounded-3xl p-10 shadow-2xl">
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-black text-white drop-shadow-sm">
+                {data.student_name}
+              </h1>
+              <p className="text-sm bg-orange-500/20 border border-orange-500/30 text-orange-400 inline-block px-4 py-1.5 rounded-md font-bold mt-3">
+                {data.student_id}
+              </p>
+              <p className="text-slate-300 font-medium mt-3 text-lg">
+                {data.branch} • Sem {data.semester} • {data.section}
+              </p>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 px-8 rounded-lg shadow-lg hover:shadow-orange-500/30 transition-all"
+            >
+              Logout
+            </button>
           </div>
-          <button
-            onClick={handleLogout}
-            className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg shadow-md transition"
-          >
-            Logout
-          </button>
         </div>
       </div>
 
-      {/* OVERALL + ELIGIBILITY */}
-      <h2 className="text-2xl font-bold text-gray-900 mb-5">
-        Overall Attendance & Student Status
-      </h2>
+      <div className="px-6 md:px-10 -mt-16 relative z-10">
 
-      <div className="flex flex-wrap gap-8 mb-12">
+        {/* OVERALL + ELIGIBILITY */}
+        <h2 className="text-2xl font-bold text-white drop-shadow-sm mb-6">
+          Overall Attendance & Student Status
+        </h2>
 
-        {/* OVERALL CARD */}
-        {(() => {
-          const percent = data.overall.percentage;
+        <div className="flex flex-wrap gap-8 mb-12 mt-12">
 
-          const radius = 40;
-          const stroke = 7;
-          const normalizedRadius = radius - stroke * 0.5;
-          const circumference = normalizedRadius * 2 * Math.PI;
-          const strokeDashoffset =
-            circumference - (percent / 100) * circumference;
+          {/* OVERALL CARD */}
+          {(() => {
+            const percent = data.overall.percentage;
 
-          return (
-            <div className="bg-white rounded-2xl shadow-md p-8 w-[320px] flex items-center gap-6">
+            const radius = 40;
+            const stroke = 7;
+            const normalizedRadius = radius - stroke * 0.5;
+            const circumference = normalizedRadius * 2 * Math.PI;
+            const strokeDashoffset =
+              circumference - (percent / 100) * circumference;
 
-              {/* Circle */}
-              <div className="relative w-24 h-24 flex items-center justify-center">
+            return (
+              <div className="bg-white rounded-2xl shadow-md p-8 w-[320px] flex items-center gap-6">
 
-                <svg
-                  height={radius * 2}
-                  width={radius * 2}
-                  className="rotate-[-90deg]"
-                >
-                  <circle
-                    stroke="#e5e7eb"
-                    fill="transparent"
-                    strokeWidth={stroke}
-                    r={normalizedRadius}
-                    cx={radius}
-                    cy={radius}
-                  />
+                {/* Circle */}
+                <div className="relative w-24 h-24 flex items-center justify-center">
 
-                  <circle
-                    stroke="#2563eb"
-                    fill="transparent"
-                    strokeWidth={stroke}
-                    strokeDasharray={circumference + " " + circumference}
-                    style={{ strokeDashoffset }}
-                    strokeLinecap="round"
-                    r={normalizedRadius}
-                    cx={radius}
-                    cy={radius}
-                  />
-                </svg>
+                  <svg
+                    height={radius * 2}
+                    width={radius * 2}
+                    className="rotate-[-90deg]"
+                  >
+                    <circle
+                      stroke="#e2e8f0"
+                      fill="transparent"
+                      strokeWidth={stroke}
+                      r={normalizedRadius}
+                      cx={radius}
+                      cy={radius}
+                    />
 
-                <div className="absolute text-blue-600 font-extrabold text-xl">
-                  {percent}%
+                    <circle
+                      stroke="#ea580c"
+                      fill="transparent"
+                      strokeWidth={stroke}
+                      strokeDasharray={circumference + " " + circumference}
+                      style={{ strokeDashoffset }}
+                      strokeLinecap="round"
+                      r={normalizedRadius}
+                      cx={radius}
+                      cy={radius}
+                    />
+                  </svg>
+
+                  <div className="absolute text-orange-600 font-extrabold text-xl">
+                    {percent}%
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <p className="text-gray-500 font-medium">Overall</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  Attendance Performance
-                </p>
+                <div>
+                  <p className="text-slate-500 font-medium">Overall</p>
+                  <p className="text-sm text-slate-400 mt-1">
+                    Attendance Performance
+                  </p>
+                </div>
+
               </div>
+            );
+          })()}
+
+          {/* ELIGIBILITY CARD */}
+          <div className="bg-white rounded-2xl shadow-md p-8 w-[320px]">
+
+            <h3 className="text-lg font-bold text-slate-800 mb-4">
+              Exam Eligibility
+            </h3>
+
+            <div className="space-y-2 text-sm font-semibold">
+
+              <p className={`${data.eligibility.mse1 ? "text-emerald-600" : "text-rose-500"}`}>
+                MSE 1 : {data.eligibility.mse1 ? "Eligible" : "Not Eligible"}
+              </p>
+
+              <p className={`${data.eligibility.mse2 ? "text-emerald-600" : "text-rose-500"}`}>
+                MSE 2 : {data.eligibility.mse2 ? "Eligible" : "Not Eligible"}
+              </p>
+
+              <p className={`${data.eligibility.exam_form ? "text-emerald-600" : "text-rose-500"}`}>
+                Exam Form : {data.eligibility.exam_form ? "Allowed" : "Blocked"}
+              </p>
+
+              <p className={`${data.eligibility.incentive ? "text-emerald-600" : "text-slate-500"}`}>
+                Incentive : {data.eligibility.incentive ? "Yes" : "No"}
+              </p>
+
+              {data.eligibility.detained && (
+                <p className="text-rose-600 font-bold pt-2">
+                  🚫 Student Detained
+                </p>
+              )}
 
             </div>
-          );
-        })()}
-
-        {/* ELIGIBILITY CARD */}
-        <div className="bg-white rounded-2xl shadow-md p-8 w-[320px]">
-
-          <h3 className="text-lg font-bold text-gray-900 mb-4">
-            Exam Eligibility
-          </h3>
-
-          <div className="space-y-2 text-sm font-semibold">
-
-            <p className={`${data.eligibility.mse1 ? "text-green-600" : "text-red-500"}`}>
-              MSE 1 : {data.eligibility.mse1 ? "Eligible" : "Not Eligible"}
-            </p>
-
-            <p className={`${data.eligibility.mse2 ? "text-green-600" : "text-red-500"}`}>
-              MSE 2 : {data.eligibility.mse2 ? "Eligible" : "Not Eligible"}
-            </p>
-
-            <p className={`${data.eligibility.exam_form ? "text-green-600" : "text-red-500"}`}>
-              Exam Form : {data.eligibility.exam_form ? "Allowed" : "Blocked"}
-            </p>
-
-            <p className={`${data.eligibility.incentive ? "text-green-600" : "text-gray-500"}`}>
-              Incentive : {data.eligibility.incentive ? "Yes" : "No"}
-            </p>
-
-            {data.eligibility.detained && (
-              <p className="text-red-600 font-bold pt-2">
-                🚫 Student Detained
-              </p>
-            )}
 
           </div>
 
         </div>
 
+
+        {/* SUBJECTS */}
+        <h2 className="text-2xl font-extrabold text-slate-800 mb-8">
+          Subjects
+        </h2>
+
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-10">
+          {data.subjects
+            .filter((s) => s.percentage > 0)
+            .map((subject, index) => (
+              <SubjectCard key={index} subject={subject} />
+            ))}
+        </div>
+
       </div>
-
-
-      {/* SUBJECTS */}
-      <h2 className="text-2xl font-extrabold text-gray-900 mb-8">
-        Subjects
-      </h2>
-
-      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-10">
-        {data.subjects
-          .filter((s) => s.percentage > 0)
-          .map((subject, index) => (
-            <SubjectCard key={index} subject={subject} />
-          ))}
-      </div>
-
     </div>
   );
 }

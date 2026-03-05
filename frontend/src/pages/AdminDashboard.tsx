@@ -151,217 +151,223 @@ export default function AdminDashboard() {
 
   if (!overview) {
     return (
-      <div className="h-screen flex items-center justify-center text-gray-500">
+      <div className="h-screen flex items-center justify-center text-slate-500">
         Loading dashboard...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen bg-slate-100 pb-10">
 
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-10">
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-10 pt-10 pb-24 shadow-xl">
+        <div className="flex justify-between items-center">
 
-        <div>
-          <h1 className="text-4xl font-black">
-            College ERP Dashboard
-          </h1>
+          <div>
+            <h1 className="text-4xl font-black text-white drop-shadow-sm">
+              College ERP Dashboard
+            </h1>
 
-          <p className="text-gray-500 mt-1">
-            Admin Analytics Panel
-          </p>
-        </div>
+            <p className="text-slate-400 mt-2 font-medium">
+              Admin Analytics Panel
+            </p>
+          </div>
 
-        <div className="flex gap-4">
+          <div className="flex gap-4">
 
-          {/* CSV UPLOAD */}
-          <label className="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold cursor-pointer hover:bg-green-700">
+            {/* CSV UPLOAD */}
+            <label className="bg-slate-800 border border-slate-700 text-white px-5 py-2.5 rounded-lg font-semibold cursor-pointer hover:bg-slate-700 transition shadow-lg hover:shadow-slate-500/20">
 
-            {uploading ? "Uploading..." : "Upload CSV"}
+              {uploading ? "Uploading..." : "Upload CSV"}
 
-            <input
-              type="file"
-              accept=".csv"
-              multiple
-              onChange={handleCsvUpload}
-              className="hidden"
-            />
-          </label>
+              <input
+                type="file"
+                accept=".csv"
+                multiple
+                onChange={handleCsvUpload}
+                className="hidden"
+              />
+            </label>
 
-          {/* AUTO SYNC */}
-          <button
-            onClick={syncCsv}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 shadow-md transition"
-          >
-            Sync CSV
-          </button>
-
-          {/* LOGOUT */}
-          <button
-            onClick={handleLogout}
-            className="bg-red-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-600 shadow-md transition"
-          >
-            Logout
-          </button>
-
-        </div>
-
-      </div>
-
-      {/* STATS */}
-      <div className="grid md:grid-cols-4 gap-6 mb-10">
-
-        <div className="bg-white rounded-xl shadow p-6">
-          <p className="text-gray-500 text-sm">
-            Total Students
-          </p>
-
-          <h2 className="text-3xl font-bold mt-2">
-            {overview.total_students}
-          </h2>
-        </div>
-
-        <div className="bg-white rounded-xl shadow p-6">
-          <p className="text-gray-500 text-sm">
-            Eligible Students
-          </p>
-
-          <h2 className="text-3xl font-bold mt-2 text-green-600">
-            {overview.eligible_students}
-          </h2>
-        </div>
-
-        <div className="bg-white rounded-xl shadow p-6">
-          <p className="text-gray-500 text-sm">
-            Defaulters
-          </p>
-
-          <h2 className="text-3xl font-bold mt-2 text-red-500">
-            {overview.defaulters}
-          </h2>
-        </div>
-
-        <div className="bg-white rounded-xl shadow p-6">
-          <p className="text-gray-500 text-sm">
-            Average Attendance
-          </p>
-
-          <h2 className="text-3xl font-bold mt-2 text-blue-600">
-            {overview.average_attendance}%
-          </h2>
-        </div>
-
-      </div>
-
-      {/* BRANCH DISTRIBUTION */}
-      <div className="bg-white rounded-xl shadow p-6 mb-10">
-
-        <h2 className="text-xl font-bold mb-4">
-          Branch Distribution
-        </h2>
-
-        <div className="space-y-3">
-
-          {branches.map((b, i) => (
-
-            <div
-              key={i}
-              className="flex justify-between border-b pb-2 text-gray-700"
+            {/* AUTO SYNC */}
+            <button
+              onClick={syncCsv}
+              className="bg-teal-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-teal-700 shadow-lg hover:shadow-teal-500/30 transition-all"
             >
-              <span>{b.branch}</span>
-              <span>{b.students}</span>
-            </div>
+              Sync CSV
+            </button>
 
-          ))}
+            {/* LOGOUT */}
+            <button
+              onClick={handleLogout}
+              className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 px-8 rounded-lg shadow-lg hover:shadow-orange-500/30 transition-all"
+            >
+              Logout
+            </button>
+
+          </div>
+
+        </div>
+      </div>
+
+      {/* CONTENT WRAPPER */}
+      <div className="px-10 -mt-10">
+
+        {/* STATS */}
+        <div className="grid md:grid-cols-4 gap-6 mb-10">
+
+          <div className="bg-white rounded-xl shadow p-6">
+            <p className="text-slate-500 text-sm">
+              Total Students
+            </p>
+
+            <h2 className="text-3xl font-bold mt-2">
+              {overview.total_students}
+            </h2>
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-6">
+            <p className="text-slate-500 text-sm">
+              Eligible Students
+            </p>
+
+            <h2 className="text-3xl font-bold mt-2 text-emerald-600">
+              {overview.eligible_students}
+            </h2>
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-6">
+            <p className="text-slate-500 text-sm">
+              Defaulters
+            </p>
+
+            <h2 className="text-3xl font-bold mt-2 text-rose-500">
+              {overview.defaulters}
+            </h2>
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-6">
+            <p className="text-slate-500 text-sm">
+              Average Attendance
+            </p>
+
+            <h2 className="text-3xl font-bold mt-2 text-orange-600">
+              {overview.average_attendance}%
+            </h2>
+          </div>
 
         </div>
 
-      </div>
+        {/* BRANCH DISTRIBUTION */}
+        <div className="bg-white rounded-xl shadow p-6 mb-10">
 
-      {/* SUBJECT PERFORMANCE */}
-      <div className="bg-white rounded-xl shadow p-6 mb-10">
+          <h2 className="text-xl font-bold mb-4">
+            Branch Distribution
+          </h2>
 
-        <h2 className="text-xl font-bold mb-4">
-          Subject Performance
-        </h2>
+          <div className="space-y-3">
 
-        <div className="space-y-3">
+            {branches.map((b, i) => (
 
-          {subjects.map((s, i) => (
-
-            <div
-              key={i}
-              className="flex justify-between border-b pb-2 text-gray-700"
-            >
-
-              <div>
-
-                <p className="font-semibold">
-                  {s.subject_code} — {s.subject_name}
-                </p>
-
-                <p className="text-sm text-gray-500">
-                  {s.faculty}
-                </p>
-
+              <div
+                key={i}
+                className="flex justify-between border-b pb-2 text-slate-700"
+              >
+                <span>{b.branch}</span>
+                <span>{b.students}</span>
               </div>
-
-              <span className="font-bold">
-                {s.percentage}%
-              </span>
-
-            </div>
-
-          ))}
-
-        </div>
-
-      </div>
-
-      {/* DEFAULTERS */}
-      <div className="bg-white rounded-xl shadow p-6">
-
-        <h2 className="text-xl font-bold mb-4 text-red-600">
-          Defaulters
-        </h2>
-
-        <table className="w-full">
-
-          <thead>
-            <tr className="text-left border-b">
-              <th className="py-2">BT ID</th>
-              <th>Name</th>
-              <th>Attendance</th>
-            </tr>
-          </thead>
-
-          <tbody>
-
-            {defaulters.map((d, i) => (
-
-              <tr key={i} className="border-b">
-
-                <td className="py-2 font-medium">
-                  {d.bt_id}
-                </td>
-
-                <td>{d.name}</td>
-
-                <td className="text-red-500 font-semibold">
-                  {d.percentage}%
-                </td>
-
-              </tr>
 
             ))}
 
-          </tbody>
+          </div>
 
-        </table>
+        </div>
+
+        {/* SUBJECT PERFORMANCE */}
+        <div className="bg-white rounded-xl shadow p-6 mb-10">
+
+          <h2 className="text-xl font-bold mb-4">
+            Subject Performance
+          </h2>
+
+          <div className="space-y-3">
+
+            {subjects.map((s, i) => (
+
+              <div
+                key={i}
+                className="flex justify-between border-b pb-2 text-slate-700"
+              >
+
+                <div>
+
+                  <p className="font-semibold text-slate-800">
+                    {s.subject_code} — {s.subject_name}
+                  </p>
+
+                  <p className="text-sm text-slate-500">
+                    {s.faculty}
+                  </p>
+
+                </div>
+
+                <span className="font-bold">
+                  {s.percentage}%
+                </span>
+
+              </div>
+
+            ))}
+
+          </div>
+
+        </div>
+
+        {/* DEFAULTERS */}
+        <div className="bg-white rounded-xl shadow p-6">
+
+          <h2 className="text-xl font-bold mb-4 text-rose-600">
+            Defaulters
+          </h2>
+
+          <table className="w-full">
+
+            <thead>
+              <tr className="text-left border-b text-slate-600">
+                <th className="py-2">BT ID</th>
+                <th>Name</th>
+                <th>Attendance</th>
+              </tr>
+            </thead>
+
+            <tbody>
+
+              {defaulters.map((d, i) => (
+
+                <tr key={i} className="border-b text-slate-800">
+
+                  <td className="py-2 font-medium">
+                    {d.bt_id}
+                  </td>
+
+                  <td>{d.name}</td>
+
+                  <td className="text-rose-500 font-semibold">
+                    {d.percentage}%
+                  </td>
+
+                </tr>
+
+              ))}
+
+            </tbody>
+
+          </table>
+
+        </div>
 
       </div>
-
     </div>
   );
 }
