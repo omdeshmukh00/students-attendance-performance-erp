@@ -28,7 +28,15 @@ type Defaulter = {
 export default function AdminDashboard() {
   useEffect(() => {
     document.title = "Admin - Dashboard";
+    if (!localStorage.getItem("admin_token")) {
+      window.location.href = "/admin";
+    }
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("admin_token");
+    window.location.href = "/admin";
+  };
 
   const [overview, setOverview] = useState<Overview | null>(null);
   const [branches, setBranches] = useState<BranchStat[]>([]);
@@ -184,9 +192,17 @@ export default function AdminDashboard() {
           {/* AUTO SYNC */}
           <button
             onClick={syncCsv}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700"
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 shadow-md transition"
           >
             Sync CSV
+          </button>
+
+          {/* LOGOUT */}
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-600 shadow-md transition"
+          >
+            Logout
           </button>
 
         </div>
