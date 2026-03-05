@@ -44,15 +44,15 @@ export default function AdminDashboard() {
 
   const loadData = () => {
 
-    fetch("http://127.0.0.1:8000/api/admin/overview")
+    fetch("http://localhost:8000/api/admin/overview")
       .then(res => res.json())
       .then(setOverview);
 
-    fetch("http://127.0.0.1:8000/api/admin/branch-analytics")
+    fetch("http://localhost:8000/api/admin/branch-analytics")
       .then(res => res.json())
       .then(setBranches);
 
-    fetch("http://127.0.0.1:8000/api/admin/subject-analytics")
+    fetch("http://localhost:8000/api/admin/subject-analytics")
       .then(res => res.json())
       .then((data) => {
 
@@ -67,7 +67,7 @@ export default function AdminDashboard() {
         setSubjects(clean);
       });
 
-    fetch("http://127.0.0.1:8000/api/admin/defaulters")
+    fetch("http://localhost:8000/api/admin/defaulters")
       .then(res => res.json())
       .then(setDefaulters);
   };
@@ -98,7 +98,7 @@ export default function AdminDashboard() {
       formData.append("file", files[i]);
 
       const res = await fetch(
-        "http://127.0.0.1:8000/api/admin/upload",
+        "http://localhost:8000/api/admin/upload",
         {
           method: "POST",
           body: formData
@@ -126,7 +126,7 @@ export default function AdminDashboard() {
     try {
 
       await fetch(
-        "http://127.0.0.1:8000/api/admin/sync",
+        "http://localhost:8000/api/admin/sync",
         { method: "POST" }
       );
 

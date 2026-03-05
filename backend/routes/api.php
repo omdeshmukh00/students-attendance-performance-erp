@@ -14,9 +14,11 @@ use App\Http\Controllers\AdminController;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/student/{bt_id}', [StudentDashboardController::class, 'show']);
+// Route::get('/student/{bt_id}', [StudentDashboardController::class, 'show']);
+Route::middleware('student.auth')->get('/student/{bt_id}', [StudentDashboardController::class, 'show']);
 Route::get('/students', [StudentController::class, 'index']);
-Route::get('/students/{id}', [StudentController::class, 'show']);
+//Route::get('/students/{id}', [StudentController::class, 'show']);
+
 
 /*
 |--------------------------------------------------------------------------

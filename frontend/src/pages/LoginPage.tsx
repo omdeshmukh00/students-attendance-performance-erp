@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+const getCookie = (name: string) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift();
+};
+
 export default function LoginPage() {
-    useEffect(() => {
+  useEffect(() => {
     document.title = "Student - Login";
   }, []);
 
@@ -13,46 +19,44 @@ export default function LoginPage() {
 
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
-    setError("");
+ const handleLogin = async () => {
 
-    if (!btId.trim() || !password.trim()) {
-      setError("Enter correct ID and Password");
-      return;
-    }
+  if (!btId.trim()) {
+    setError("Enter correct ID");
+    return;
+  }
 
-    try {
-      setLoading(true);
+  const id = btId.toUpperCase();
 
-      const id = btId.toUpperCase();
+  const res = await fetch("http://localhost:8000/login", {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      student_id: id
+    })
+  });
 
-      const res = await fetch(
-        `http://127.0.0.1:8000/api/student/${id}`
-      );
+  const data = await res.json();
 
-      if (!res.ok) {
-        setError("Enter correct ID and Password");
-        return;
-      }
+  if (!res.ok) {
+    setError(data.message || "Login failed");
+    return;
+  }
 
-      // OPTIONAL: If later password validation added → check here
-
-      navigate(`/dashboard/${id}`);
-    } catch {
-      setError("Server error. Try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  navigate(`/dashboard/${id}`);
+};
   // ENTER KEY SUPPORT
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleLogin();
   };
 
+  
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4 font-roboto">
-      
+
       <div className="bg-white shadow-xl rounded-2xl w-full max-w-md p-10">
 
         {/* LOGO */}
