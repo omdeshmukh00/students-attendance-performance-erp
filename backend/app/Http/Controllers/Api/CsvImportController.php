@@ -14,280 +14,375 @@ use App\Models\AttendanceEligibility;
 class CsvImportController extends Controller
 {
 
-private function clean($text)
-{
-    return strtolower(trim(preg_replace('/\s+/', ' ', $text ?? '')));
-}
+    private function clean($text)
+    {
+        return strtolower(trim(preg_replace('/\s+/', ' ', $text ?? '')));
+    }
 
-private function cleanNameText($text)
-{
-    if (!$text) return $text;
+    private function cleanNameText($text)
+    {
+        if (!$text)
+            return $text;
 
-    $text = strtolower($text);
+        $text = strtolower($text);
 
-    $text = str_replace([
-        'a0lysis','ma0gement','ma0geme nt','foundatio ns',
-        'applicatio ns','program ming','programmi ng','langauge'
-    ], [
-        'analysis','management','management','foundations',
-        'applications','programming','programming','language'
-    ], $text);
+        $text = str_replace([
+            'a0lysis',
+            'ma0gement',
+            'ma0geme nt',
+            'foundatio ns',
+            'applicatio ns',
+            'program ming',
+            'programmi ng',
+            'langauge'
+        ], [
+            'analysis',
+            'management',
+            'management',
+            'foundations',
+            'applications',
+            'programming',
+            'programming',
+            'language'
+        ], $text);
 
-    $text = preg_replace('/\b0([a-z])/', 'na$1', $text);
-    $text = preg_replace('/([a-z])0([a-z])/', '$1na$2', $text);
-    $text = str_replace('0', 'na', $text);
+        $text = preg_replace('/\b0([a-z])/', 'na$1', $text);
+        $text = preg_replace('/([a-z])0([a-z])/', '$1na$2', $text);
+        $text = str_replace('0', 'na', $text);
 
-    $text = preg_replace('/\s+/', ' ', $text);
+        $text = preg_replace('/\s+/', ' ', $text);
 
-    return ucwords(trim($text));
-}
+        return ucwords(trim($text));
+    }
 
-private function extractMetaFromTopRows($rows)
-{
-    $section = null;
-    $branch = null;
-    $semester = null;
+    private function extractMetaFromTopRows($rows)
+    {
+        $section = null;
+        $branch = null;
+        $semester = null;
 
-    foreach (array_slice($rows, 0, 15) as $row) {
+        foreach (array_slice($rows, 0, 15) as $row) {
 
-        $line = strtolower(trim(implode(' ', $row)));
+            $line = strtolower(trim(implode(' ', $row)));
 
-        if (str_contains($line, 'section')) {
-            if (preg_match('/section\s*[:\-]?\s*([a-z0-9\-]+)/i', $line, $m)) {
+            if (str_contains($line, 'section')) {
+                if (preg_match('/section\s*[:\-]?\s*([a-z0-9\-]+)/i', $line, $m)) {
 
-                $section = strtoupper($m[1]);
+                    $section = strtoupper($m[1]);
 
-                if (str_contains($section, '-')) {
-                    $branch = explode('-', $section)[0];
-                } else {
-                    $branch = $section;
+                    if (str_contains($section, '-')) {
+                        $branch = explode('-', $section)[0];
+                    } else {
+                        $branch = $section;
+                    }
+                }
+            }
+
+            if (str_contains($line, 'semester')) {
+                if (preg_match('/semester\s*[:\-]?\s*(\d+)/i', $line, $m)) {
+                    $semester = (int) $m[1];
                 }
             }
         }
 
-        if (str_contains($line, 'semester')) {
-            if (preg_match('/semester\s*[:\-]?\s*(\d+)/i', $line, $m)) {
-                $semester = (int) $m[1];
+        return [
+            'branch' => $branch ?? 'UNKNOWN',
+            'section' => $section ?? 'UNKNOWN',
+            'semester' => $semester ?? 0
+        ];
+    }
+
+    private function findHeaderIndex($rows)
+    {
+        foreach ($rows as $i => $row) {
+            $line = $this->clean(implode(' ', $row));
+
+            if (str_contains($line, 'roll') && str_contains($line, 'student')) {
+                return $i;
             }
         }
+
+        return null;
     }
 
-    return [
-        'branch' => $branch ?? 'UNKNOWN',
-        'section' => $section ?? 'UNKNOWN',
-        'semester' => $semester ?? 0
-    ];
-}
+    private function parseSubject($text)
+    {
+        $text = trim(preg_replace('/\s+/', ' ', $text));
 
-private function findHeaderIndex($rows)
-{
-    foreach ($rows as $i => $row) {
-        $line = $this->clean(implode(' ', $row));
-
-        if (str_contains($line, 'roll') && str_contains($line, 'student')) {
-            return $i;
-        }
-    }
-
-    return null;
-}
-
-private function parseSubject($text)
-{
-    $text = trim(preg_replace('/\s+/', ' ', $text));
-
-    if (preg_match('/^([A-Z0-9]+)\s+(.*?)\s*\((.*?)\)$/i', $text, $m)) {
-        return [
-            'code' => trim($m[1]),
-            'name' => $this->cleanNameText($m[2]),
-            'faculty' => $this->cleanNameText($m[3])
-        ];
-    }
-
-    if (preg_match('/^([A-Z0-9]+)\s+(.*)$/i', $text, $m)) {
-        return [
-            'code' => trim($m[1]),
-            'name' => $this->cleanNameText($m[2]),
-            'faculty' => null
-        ];
-    }
-
-    return ['code'=>null,'name'=>null,'faculty'=>null];
-}
-
-private function detectOverallColumns($headers)
-{
-    $totalCol = null;
-    $percentCol = null;
-
-    foreach ($headers as $i => $h) {
-
-        $h = strtolower($h);
-        $h = str_replace(["\n", "\r"], " ", $h);
-        $h = preg_replace('/\s+/', ' ', $h);
-        $h = trim($h);
-
-        if (
-            str_contains($h, 'total') &&
-            !str_contains($h, 'lecture') &&
-            !str_contains($h, 'theory') &&
-            !str_contains($h, 'practical')
-        ) {
-            $totalCol = $i;
+        if (preg_match('/^([A-Z0-9]+)\s+(.*?)\s*\((.*?)\)$/i', $text, $m)) {
+            return [
+                'code' => trim($m[1]),
+                'name' => $this->cleanNameText($m[2]),
+                'faculty' => $this->cleanNameText($m[3])
+            ];
         }
 
-        if (
-            str_contains($h, 'percent') ||
-            str_contains($h, '%')
-        ) {
-            $percentCol = $i;
+        if (preg_match('/^([A-Z0-9]+)\s+(.*)$/i', $text, $m)) {
+            return [
+                'code' => trim($m[1]),
+                'name' => $this->cleanNameText($m[2]),
+                'faculty' => null
+            ];
         }
+
+        return ['code' => null, 'name' => null, 'faculty' => null];
     }
 
-    return [$totalCol, $percentCol];
-}
+    private function detectOverallColumns($headers)
+    {
+        $totalCol = null;
+        $percentCol = null;
 
-public function import($filename)
-{
-    set_time_limit(0);
+        foreach ($headers as $i => $h) {
 
-    $path = storage_path("app/csv/".$filename);
+            $h = strtolower($h);
+            $h = str_replace(["\n", "\r"], " ", $h);
+            $h = preg_replace('/\s+/', ' ', $h);
+            $h = trim($h);
 
-    if (!file_exists($path)) {
-        return response()->json(['error'=>'File not found'],404);
+            if (
+                str_contains($h, 'total') &&
+                !str_contains($h, 'lecture') &&
+                !str_contains($h, 'theory') &&
+                !str_contains($h, 'practical')
+            ) {
+                $totalCol = $i;
+            }
+
+            if (
+                str_contains($h, 'percent') ||
+                str_contains($h, '%')
+            ) {
+                $percentCol = $i;
+            }
+        }
+
+        return [$totalCol, $percentCol];
     }
 
-    $csv = Reader::createFromPath($path, 'r');
+    /* NEW: detect additional column */
 
-    $rows = [];
-    foreach ($csv->getRecords() as $r) {
-        $rows[] = array_values($r);
+    private function detectAdditionalColumn($headers)
+    {
+        foreach ($headers as $i => $h) {
+
+            $h = strtolower($h);
+            $h = str_replace(["\n", "\r"], " ", $h);
+            $h = preg_replace('/\s+/', ' ', $h);
+            $h = trim($h);
+
+            if (str_contains($h, 'additional')) {
+                return $i;
+            }
+        }
+
+        return null;
     }
 
-    $meta = $this->extractMetaFromTopRows($rows);
+    public function import($filename)
+    {
+        set_time_limit(0);
 
-    $headerIndex = $this->findHeaderIndex($rows);
-    if ($headerIndex === null) {
-        return response()->json(['error'=>'Header not found'],500);
-    }
+        $path = storage_path("app/csv/" . $filename);
 
-    $headers = $rows[$headerIndex];
+        if (!file_exists($path)) {
+            return response()->json(['error' => 'File not found'], 404);
+        }
 
-    [$totalCol, $percentCol] = $this->detectOverallColumns($headers);
+        $csv = Reader::createFromPath($path, 'r');
 
-    if ($totalCol === null || $percentCol === null) {
-        Log::error("Overall columns not detected for file: ".$filename);
-        return response()->json(['error'=>'Overall columns not detected'],500);
-    }
+        $rows = [];
+        foreach ($csv->getRecords() as $r) {
+            $rows[] = array_values($r);
+        }
 
-    $totalLecturesRow = $rows[$headerIndex + 1] ?? [];
+        $meta = $this->extractMetaFromTopRows($rows);
 
-    $overallTotalFromSheet =
-        isset($totalLecturesRow[$totalCol]) &&
-        is_numeric($totalLecturesRow[$totalCol])
-            ? (int)$totalLecturesRow[$totalCol]
+        $headerIndex = $this->findHeaderIndex($rows);
+        if ($headerIndex === null) {
+            return response()->json(['error' => 'Header not found'], 500);
+        }
+
+        $headers = $rows[$headerIndex];
+
+        [$totalCol, $percentCol] = $this->detectOverallColumns($headers);
+        $additionalCol = $this->detectAdditionalColumn($headers);
+
+        if ($totalCol === null || $percentCol === null) {
+            Log::error("Overall columns not detected for file: " . $filename);
+            return response()->json(['error' => 'Overall columns not detected'], 500);
+        }
+
+        $totalLecturesRow = $rows[$headerIndex + 1] ?? [];
+
+        $overallTotalFromSheet =
+            isset($totalLecturesRow[$totalCol]) &&
+            is_numeric($totalLecturesRow[$totalCol])
+            ? (int) $totalLecturesRow[$totalCol]
             : 0;
 
-    $imported = 0;
+        $imported = 0;
 
-    for ($i = $headerIndex + 2; $i < count($rows); $i++) {
+        for ($i = $headerIndex + 2; $i < count($rows); $i++) {
 
-        $row = $rows[$i];
-        if (!array_filter($row)) continue;
+            $row = $rows[$i];
+            if (!array_filter($row))
+                continue;
 
-        $row = array_pad($row, count($headers), null);
+            $row = array_pad($row, count($headers), null);
 
-        $record = array_combine($headers, $row);
+            $record = array_combine($headers, $row);
 
-        $roll = strtoupper(trim($record['Roll Number'] ?? ''));
-        $name = $this->cleanNameText(trim($record['Student Name'] ?? ''));
+            $roll = strtoupper(trim($record['Roll Number'] ?? ''));
+            $name = $this->cleanNameText(trim($record['Student Name'] ?? ''));
 
-        if (!$roll) continue;
+            if (!$roll)
+                continue;
 
-        $attendedRaw = $row[$totalCol] ?? null;
-        $percentRaw = $row[$percentCol] ?? null;
+            $attendedRaw = $row[$totalCol] ?? null;
+            $percentRaw = $row[$percentCol] ?? null;
 
-        $overallAttended = is_numeric($attendedRaw) ? (int)$attendedRaw : 0;
-        $overallPercent = is_numeric($percentRaw) ? (float)$percentRaw : 0;
+            $overallAttended = is_numeric($attendedRaw) ? (int) $attendedRaw : 0;
+            $overallPercent = is_numeric($percentRaw) ? (float) $percentRaw : 0;
 
-        $student = Student::updateOrCreate(
-            ['student_id'=>$roll],
-            [
-                'name'=>$name,
-                'branch'=>$meta['branch'],
-                'section'=>$meta['section'],
-                'semester'=>$meta['semester'],
-                'overall_total'=>$overallTotalFromSheet,
-                'overall_attended'=>$overallAttended,
-                'overall_percentage'=>$overallPercent
-            ]
-        );
+            /* READ ADDITIONAL ATTENDANCE */
 
-        foreach ($headers as $colIndex => $columnName) {
+            $additionalRaw = $additionalCol !== null ? ($row[$additionalCol] ?? 0) : 0;
+            $additionalAttendance = is_numeric($additionalRaw) ? (int) $additionalRaw : 0;
 
-            $value = $row[$colIndex] ?? null;
-            if ($value === null || $value === '') continue;
+            $subjectsData = [];
+            $computedOverallTotal = 0;
 
-            if (in_array($columnName, ['#','Roll Number','Student Name'])) continue;
-            if (str_contains(strtolower($columnName), 'total')) continue;
-            if (str_contains(strtolower($columnName), 'percent')) continue;
-            if (str_contains(strtolower($columnName), 'additional')) continue;
+            foreach ($headers as $colIndex => $columnName) {
 
-            $parsed = $this->parseSubject($columnName);
-            if (!$parsed['code']) continue;
+                $value = $row[$colIndex] ?? null;
+                if ($value === null || $value === '')
+                    continue;
 
-            $subject = Subject::updateOrCreate(
-                ['subject_code'=>$parsed['code']],
+                if (in_array($columnName, ['#', 'Roll Number', 'Student Name']))
+                    continue;
+                if (str_contains(strtolower($columnName), 'total'))
+                    continue;
+                if (str_contains(strtolower($columnName), 'percent'))
+                    continue;
+                if (str_contains(strtolower($columnName), 'additional'))
+                    continue;
+
+                $parsed = $this->parseSubject($columnName);
+                if (!$parsed['code'])
+                    continue;
+
+                $subjectTotal = isset($totalLecturesRow[$colIndex])
+                    ? (int) $totalLecturesRow[$colIndex]
+                    : 15;
+
+                $attended = (int) $value;
+
+                $subjectsData[] = [
+                    'parsed' => $parsed,
+                    'attended' => $attended,
+                    'total' => $subjectTotal,
+                ];
+
+                if ($attended > 0) {
+                    $computedOverallTotal += $subjectTotal;
+                }
+            }
+
+            $overallTotalToUse = $computedOverallTotal > 0 ? $computedOverallTotal : $overallTotalFromSheet;
+
+            $student = Student::updateOrCreate(
+                ['student_id' => $roll],
                 [
-                    'subject_name'=>$parsed['name'],
-                    'faculty'=>$parsed['faculty']
+                    'name' => $name,
+                    'branch' => $meta['branch'],
+                    'section' => $meta['section'],
+                    'semester' => $meta['semester'],
+                    'overall_total' => $overallTotalToUse,
+                    'overall_attended' => $overallAttended,
+                    'overall_percentage' => $overallPercent,
+                    'additional_attendance' => $additionalAttendance
                 ]
             );
 
-            $subjectTotal = isset($totalLecturesRow[$colIndex])
-                ? (int)$totalLecturesRow[$colIndex]
-                : 15;
+            // The subject parsing and filtering loop has been moved up to calculate the accurate $computedOverallTotal
 
-            $attended = (int)$value;
+            if ($additionalAttendance > 0) {
+                $loopCount = 0;
+                while ($additionalAttendance > 0 && $loopCount < 1000) {
+                    $eligibleIndices = [];
+                    foreach ($subjectsData as $index => $subData) {
+                        // Crucial fix: check the LIVE updated array, not the stale iteration variable!
+                        if ($subjectsData[$index]['attended'] < $subjectsData[$index]['total'] && $subjectsData[$index]['attended'] > 0) {
+                            $eligibleIndices[] = $index;
+                        }
+                    }
 
-            $attendance = Attendance::updateOrCreate(
-                [
-                    'student_id'=>$student->id,
-                    'subject_id'=>$subject->id
-                ],
-                [
-                    'attended'=>$attended,
-                    'total'=>$subjectTotal,
-                    'percentage'=>$subjectTotal > 0
-                        ? round(($attended/$subjectTotal)*100,2)
-                        : 0
-                ]
-            );
+                    if (empty($eligibleIndices)) {
+                        break;
+                    }
 
-            $eligibility = AttendanceEligibilityService::calculate($attended, $subjectTotal);
+                    foreach ($eligibleIndices as $index) {
+                        if ($additionalAttendance > 0) {
+                            $subjectsData[$index]['attended']++;
+                            $additionalAttendance--;
+                        }
+                    }
+                    $loopCount++;
+                }
+            }
 
-            AttendanceEligibility::updateOrCreate(
-                [
-                    'student_id'=>$student->id,
-                    'subject_id'=>$subject->id
-                ],
-                [
-                    'attendance_percentage'=>$eligibility['percentage'],
-                    'eligible_mse1'=>$eligibility['mse1'],
-                    'eligible_mse2'=>$eligibility['mse2'],
-                    'eligible_endsem'=>$eligibility['endsem'],
-                    'eligible_incentive'=>$eligibility['incentive']
-                ]
-            );
+            foreach ($subjectsData as $subData) {
+                $parsed = $subData['parsed'];
+                $attended = $subData['attended'];
+                $subjectTotal = $subData['total'];
+
+                $subject = Subject::updateOrCreate(
+                    ['subject_code' => $parsed['code']],
+                    [
+                        'subject_name' => $parsed['name'],
+                        'faculty' => $parsed['faculty']
+                    ]
+                );
+
+                $attendance = Attendance::updateOrCreate(
+                    [
+                        'student_id' => $student->id,
+                        'subject_id' => $subject->id
+                    ],
+                    [
+                        'attended' => $attended,
+                        'total' => $subjectTotal,
+                        'percentage' => $subjectTotal > 0
+                            ? round(($attended / $subjectTotal) * 100, 2)
+                            : 0
+                    ]
+                );
+
+                $eligibility = AttendanceEligibilityService::calculate($attended, $subjectTotal);
+
+                AttendanceEligibility::updateOrCreate(
+                    [
+                        'student_id' => $student->id,
+                        'subject_id' => $subject->id
+                    ],
+                    [
+                        'attendance_percentage' => $eligibility['percentage'],
+                        'eligible_mse1' => $eligibility['mse1'],
+                        'eligible_mse2' => $eligibility['mse2'],
+                        'eligible_endsem' => $eligibility['endsem'],
+                        'eligible_incentive' => $eligibility['incentive']
+                    ]
+                );
+            }
+
+            $imported++;
         }
 
-        $imported++;
+        return response()->json([
+            'message' => 'FILE IMPORTED SUCCESSFULLY',
+            'students_imported' => $imported
+        ]);
     }
-
-    return response()->json([
-        'message'=>'FILE IMPORTED SUCCESSFULLY',
-        'students_imported'=>$imported
-    ]);
-}
 
 }

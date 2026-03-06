@@ -12,17 +12,14 @@ return new class extends Migration
     public function up()
 {
     Schema::table('users', function ($table) {
-        $table->string('student_id')->unique()->after('name');
+        $table->string('student_id')->nullable()->after('name');
     });
 }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::table('users', function (Blueprint $table) {
-            //
-        });
-    }
+public function down(): void
+{
+    Schema::table('users', function (Blueprint $table) {
+        $table->dropColumn('student_id');
+    });
+}
 };

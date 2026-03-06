@@ -22,13 +22,52 @@ class StudentDashboardController extends Controller
             ], 404);
         }
 
+        $subjectAttendances = $student->attendances;
+
         /*
         ====================================
-        NORMALIZE PERCENTAGE (CRITICAL FIX)
+        NORMALIZE SUBJECT ATTENDANCE
         ====================================
         */
 
-        $overallPercent = ceil($student->overall_percentage);
+        $normalizedSubjects = $subjectAttendances->map(function ($att, $index) {
+
+            $percentage = $att->total > 0
+                ? ($att->attended / $att->total) * 100
+                : 0;
+
+            return [
+                'model' => $att,
+                'attended' => $att->attended,
+                'total' => $att->total,
+                'percentage' => $percentage,
+                'index' => $index
+            ];
+
+        })->values()->toArray();
+
+        /*
+        ====================================
+        NORMALIZE OVERALL PERCENT
+        ====================================
+        */
+
+        $calculatedOverallAttended = 0;
+        $calculatedOverallTotal = 0;
+
+        foreach ($normalizedSubjects as $subjectItem) {
+            // Unenrolled electives have 0 attendance, so we skip them for the overall calculation
+            if ($subjectItem['attended'] > 0) {
+                $calculatedOverallAttended += $subjectItem['attended'];
+                $calculatedOverallTotal += $subjectItem['total'];
+            }
+        }
+
+        $overallPercentRaw = $calculatedOverallTotal > 0
+            ? ($calculatedOverallAttended / $calculatedOverallTotal) * 100
+            : 0;
+
+        $overallPercent = min(100, ceil($overallPercentRaw));
 
         /*
         ====================================
@@ -45,6 +84,40 @@ class StudentDashboardController extends Controller
 
         $incentiveEligible = $overallPercent >= 75;
 
+        /*
+        ====================================
+        BUILD SUBJECT RESPONSE
+        ====================================
+        */
+
+        $subjects = collect($normalizedSubjects)->map(function ($item) {
+
+            $att = $item['model'];
+
+            $attended = $item['attended'];
+            $total = $item['total'];
+
+            $percentage = $total > 0
+                ? ceil(($attended / $total) * 100)
+                : 0;
+
+            return [
+                'subject_code' => $att->subject->subject_code,
+                'subject_name' => $att->subject->subject_name,
+                'faculty' => $att->subject->faculty,
+                'attended' => min($attended, $total),
+                'total' => $total,
+                'percentage' => min($percentage, 100)
+            ];
+
+        })->values();
+
+        /*
+        ====================================
+        FINAL RESPONSE
+        ====================================
+        */
+
         return response()->json([
 
             'student_id' => $student->student_id,
@@ -54,8 +127,8 @@ class StudentDashboardController extends Controller
             'section' => $student->section,
 
             'overall' => [
-                'total' => $student->overall_total,
-                'attended' => $student->overall_attended,
+                'total' => $calculatedOverallTotal,
+                'attended' => $calculatedOverallAttended,
                 'percentage' => $overallPercent
             ],
 
@@ -67,22 +140,7 @@ class StudentDashboardController extends Controller
                 'incentive' => $incentiveEligible
             ],
 
-            'subjects' => $student->attendances->map(function ($att) {
-
-                $percentage = $att->total > 0
-                    ? ceil(($att->attended / $att->total) * 100)
-                    : 0;
-
-                return [
-                    'subject_code' => $att->subject->subject_code,
-                    'subject_name' => $att->subject->subject_name,
-                    'faculty' => $att->subject->faculty,
-                    'attended' => $att->attended,
-                    'total' => $att->total,
-                    'percentage' => min($percentage, 100)
-                ];
-
-            })->values()
+            'subjects' => $subjects
 
         ]);
     }

@@ -15,7 +15,8 @@ protected $fillable = [
     'semester',
     'overall_total',
     'overall_attended',
-    'overall_percentage'
+    'overall_percentage',
+    'additional_attendance'
 ];
 
 
