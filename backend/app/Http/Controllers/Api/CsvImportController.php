@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use App\Services\AttendanceEligibilityService;
 use App\Models\AttendanceEligibility;
 
+
 class CsvImportController extends Controller
 {
 
@@ -199,6 +200,8 @@ class CsvImportController extends Controller
         $meta = $this->extractMetaFromTopRows($rows);
 
         $headerIndex = $this->findHeaderIndex($rows);
+        $headers = $rows[$headerIndex];
+
         if ($headerIndex === null) {
             return response()->json(['error' => 'Header not found'], 500);
         }
@@ -233,8 +236,30 @@ class CsvImportController extends Controller
 
             $record = array_combine($headers, $row);
 
-            $roll = strtoupper(trim($record['Roll Number'] ?? ''));
-            $name = $this->cleanNameText(trim($record['Student Name'] ?? ''));
+/*
+|--------------------------------------------------------------------------
+| FLEXIBLE HEADER MATCHING
+|--------------------------------------------------------------------------
+*/
+
+$roll = strtoupper(trim(
+    $record['Roll Number']
+    ?? $record['Roll No']
+    ?? $record['Roll']
+    ?? $record['ROLL NO']
+    ?? ''
+));
+
+$name = $this->cleanNameText(trim(
+    $record['Student Name']
+    ?? $record['Name']
+    ?? $record['Student']
+    ?? ''
+));
+
+if (!$roll) {
+    continue;
+}
 
             if (!$roll)
                 continue;

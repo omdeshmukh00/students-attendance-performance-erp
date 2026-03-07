@@ -34,4 +34,22 @@ class AdminController extends Controller
             'message' => 'CSV Sync Started'
         ]);
     }
+
+    public function uploadCsv(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:csv,txt'
+        ]);
+
+        $file = $request->file('file');
+
+        $name = time() . '_' . $file->getClientOriginalName();
+
+        $file->move(storage_path('app/csv'), $name);
+
+        return response()->json([
+            'message' => 'CSV uploaded successfully',
+            'file' => $name
+        ]);
+    }
 }
